@@ -4,6 +4,7 @@ Data Structures Mini Project - 2015
 
 Package huffmancoding: 
 + Very unprofessional, loads of bugs.
++ Does not actually compress files.
 
 To use, import the HuffmanCoding class from the huffmancoding package into the folder of your client class  
 `import huffmancoding.HuffmanCoding;`
