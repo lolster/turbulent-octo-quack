@@ -1,0 +1,7 @@
+This is some sample text.
+This is gonna break.
+OH WAIT!!!
+int main() {
+	//Dis gonn be gud.
+	return 0;
+}
