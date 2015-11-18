@@ -24,7 +24,7 @@ public class HuffmanCoding {
 			inputRaw += temp + "\n";
 		}
 
-		System.out.println(inputRaw);
+		//System.out.println(inputRaw);
 		
 		inputRaw = inputRaw.substring(0, inputRaw.length() - 1); //Strip the extra '\n' at the end of the string
 		
@@ -46,7 +46,6 @@ public class HuffmanCoding {
 		temp = tree.getEncodedMessage();
 		//System.out.println(temp);
 		writer.write(temp + "\0");
-		//BinOut.write(outputFile, tree.getEncodedMessage());
 		
 		reader.close();
 		writer.close();
@@ -56,23 +55,26 @@ public class HuffmanCoding {
 
 	public static File decompress(File inputFile, String outputFile) throws Exception {
 		FileReader reader = new FileReader(inputFile);
+
+		//Modify this
 		String[] uniqueCharacters = split(readLine(reader));
-		/*String[] codes = split(readLine(reader)); //WRONG!!! */
-		String[] codes = readLine(reader).split(" "); //Correct, there are guaranteed to be no '\n'
+		String[] codes = readLine(reader).split(" ");
 		String codedMessage = readLine(reader);
-		HuffmanTree tree = new HuffmanTree();
+		
+		//HuffmanTree tree = new HuffmanTree(); //Create empty huffman tree.
 
 		//Testing purposes
-		System.out.println(Arrays.toString(uniqueCharacters) + "\n" + Arrays.toString(codes) + "\n" + codedMessage);
+		//System.out.println(Arrays.toString(uniqueCharacters) + "\n" + Arrays.toString(codes) + "\n" + codedMessage);
 		
 		//Decode the message, returns string of characters
-		String decodedMessage = tree.decode(codedMessage, codes, uniqueCharacters);
+		String decodedMessage = HuffmanTree.decode(codedMessage, codes, uniqueCharacters);
+
 		//Create the file specified by the user (String outputFile) and write to it.
 		File file = new File(outputFile);
 		FileWriter writer = new FileWriter(file);
 
 		//Testing purposes
-		System.out.println(decodedMessage);
+		//System.out.println(decodedMessage);
 
 		//Write
 		writer.write(decodedMessage);
@@ -85,6 +87,7 @@ public class HuffmanCoding {
 		return file;
 	}
 
+	/*To read a 'line' (terminated by '\0')*/
 	private static String readLine(FileReader reader) throws Exception {
 		String temp ="";
 		char current;
@@ -97,6 +100,8 @@ public class HuffmanCoding {
 		return temp;
 	}
 
+
+	/*Miscallaneous Functions*/
 	private static String getString(char[] array) {
 		String res = "";
 		//System.out.println(Arrays.toString(array));
@@ -119,6 +124,7 @@ public class HuffmanCoding {
 		//return res;
 	}
 
+	/*To split the input string from the compresses file into a String[]*/
 	private static String[] split(String input) {
 		ArrayList<String> list = new ArrayList<>();
 		for(int i = 0; i < input.length(); i+=2) {

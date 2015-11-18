@@ -1,7 +1,692 @@
-This is some sample text.
-This is gonna break.
-OH WAIT!!!
-int main() {
-	//Dis gonn be gud.
+/*
+	II Semester ST Assignment: Sathyam Machine Machine Language Compiler
+	Program Name: AnSu 3.1.1 (No JMP Edition)
+
+	Programmers:
+	Anush S Kumar
+	01FB14ECS037
+
+	Sushrith Arkal
+	01FB14ECS262
+
+	Section K (CSE)
+
+	Submission Date: 17-04-2015
+
+	Special Notes:
+	This version does not include JMP tags. Please do not attempt to
+	pass/use JMP tags in code.
+	Also, the length of the variable names are restricted to about 10
+	or so characters.
+
+	Licensed under Creative Commons 3.0.
+	Free to distribute under given condtions.
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <time.h>
+#define DEV_MODE 1
+
+//Global Variables Declaration:
+int binary[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //Holds the binary translation of each line of code.
+char opcode[10]; //String variable to hold the opcode in each line of code.
+char opsource[10]; //String variable to hold opsource in each line of code.
+char opdest[10]; //String variable to hold opdest in each line of code.
+int check_imm = 0; //Boolean variable to check if the line of code being read contains the need for immediate values.
+int check_dc = 0; //Boolean variable to check if the line of code being read contains the need for DC (Declaration of constants).
+int check_ds = 0; //Boolean variable to check if the line of code being read contains the need for DS (Define Storage).
+int check_hlt = 0; //Boolean variable to check if the line of code being read contains the need for HLT Case.
+int check_amp = 0; //To check if the address of the variable is needed.
+int check_jmp = 0; //To check if JMP tags are needed.
+
+//Function prototypes:
+void set_bin_opsource(int reg_num); //Sets the bits for given register number for opsource.
+void set_bin_opdest(int reg_num); //Sets the bits for given register number for opdest.
+void detect_opcode(); //To detect and set the opcode bits for given opcode in line being read.
+void detect_opdest(); //To detect and set the opdest bits for given opdest in line being read.
+void detect_opsource(); //To detect and set the opsource bits for given opsource in line being read.
+int hex_to_dec(char hex[]); //Takes a hexadecimal number as character array and returns its equivalent decimal value.
+void pass1(char fn[]); //The first pass function. Build the symbol table here.
+void bin_to_hex(int bin[]); //Takes the binary array and prints out the hexadecimal equivalent.
+void addr_finder(char var_ops[]); //Finds the address of the required variable, and prints it in hexadecimal form.
+
+int main()
+{
+	char fname[128]; //The file name with code.
+	char ch;
+	int temp = 0;//some temp value
+	int i = 0;//counter variable
+
+	printf("\n                       AnSu 3.1.1 (No JMP Edition)\n");
+	printf("\n-------------------------------------------------------------------------\n\n");
+	printf("Loading...\n");
+	for(i = 0; i <= 666666667; i++);
+	printf("\nEnter file name with extension or enter \"exit\" (excluding quotation marks) to exit:\n");
+	scanf("%s",fname);
+
+    if(strcmp(fname, "exit") == 0)
+        return 0;
+
+	FILE *f = fopen(fname, "r");
+
+	while(!f)
+	{
+		printf("\nInvalid file name.\nPlease retry or enter \"exit\".\n");
+		scanf("%s",fname);
+		if(strcmp(fname, "exit") == 0)
+            return 0;
+		f = fopen(fname, "r");
+	}
+
+	printf("\nAnalysing...\n");
+    for(i = 0; i <= 999999999; i++);
+
+	pass1(fname);
+
+    printf("\n");
+
+	while(!feof(f))
+	{
+		if (fscanf(f, "%s%s%s", opcode, opdest, opsource) < 0 )
+		{
+			break;
+		}
+		else
+		{
+			//Resetting all check variables.
+			check_imm = 0;
+			check_dc = 0;
+			check_ds = 0;
+			check_hlt = 0;
+			check_amp = 0;
+
+			detect_opcode(); //Detecting opcode.
+
+			//JMP tags not supported. If JMP tags are present in the code then the program will end.
+			if(check_jmp == 1)
+			{
+				printf("Please do not use JMP tags.\nThey are not supported as of version 3.1.1.\n");
+				return 0;
+			}
+
+			if(check_hlt == 0) //If not HLT, then check remaining parts of code.
+			{
+				detect_opdest();
+				detect_opsource();
+			}
+
+			if(check_imm) //When immediate values are needed.
+			{
+				bin_to_hex(binary);
+				printf("%0.4X\n",hex_to_dec(opsource));
+			}
+			else if(check_hlt == 1) //For HLT.
+			{
+				printf("2800\n");
+			}
+			else if(check_dc) //For DC.
+			{
+				printf("%0.4X\n",hex_to_dec(opsource));
+			}
+			else if(check_ds) //For DS.
+			{
+				temp = hex_to_dec(opsource);
+				//If DS is present, print remaining temp number of lines of code need to be 0.
+				for(i = 0; i < temp; i++)
+				{
+						printf("0000\n");
+				}
+			}
+			else if(check_amp) //When address of a variable is required.
+			{
+				bin_to_hex(binary); //Print the hexadecimal of the first line.
+				addr_finder(opsource); //Then print the hexadecimal of the the address of the variable.
+			}
+			else
+			{
+				bin_to_hex(binary); //Just prints the hex of the binary for current line.
+			}
+		}
+	}
 	return 0;
+}
+
+/*
+The following function takes the register number from the code and sets the
+appropriate bits for opsource.
+*/
+void set_bin_opsource(int reg_num)
+{
+	if(reg_num == 0)
+	{
+		binary[11] = 0;
+		binary[12] = 0;
+		binary[13] = 0;
+	}
+	else if(reg_num == 1)
+	{
+		binary[11] = 0;
+		binary[12] = 0;
+		binary[13] = 1;
+	}
+	else if(reg_num == 2)
+	{
+		binary[11] = 0;
+		binary[12] = 1;
+		binary[13] = 0;
+	}
+	else if(reg_num == 3)
+	{
+		binary[11] = 0;
+		binary[12] = 1;
+		binary[13] = 1;
+	}
+	else if(reg_num == 4)
+	{
+		binary[11] = 1;
+		binary[12] = 0;
+		binary[13] = 0;
+	}
+	else if(reg_num == 5)
+	{
+		binary[11] = 1;
+		binary[12] = 0;
+		binary[13] = 1;
+	}
+	else if(reg_num == 6)
+	{
+		binary[11] = 1;
+		binary[12] = 1;
+		binary[13] = 0;
+	}
+	else if(reg_num == 7)
+	{
+		binary[11] = 1;
+		binary[12] = 1;
+		binary[13] = 1;
+	}
+}
+
+
+/*
+This function is similar to set_bin_opdest(int) but set sets the
+bits for opdest.
+*/
+void set_bin_opdest(int reg_num)
+{
+	if(reg_num == 0)
+	{
+		binary[6] = 0;
+		binary[7] = 0;
+		binary[8] = 0;
+	}
+	else if(reg_num == 1)
+	{
+		binary[6] = 0;
+		binary[7] = 0;
+		binary[8] = 1;
+	}
+	else if(reg_num == 2)
+	{
+		binary[6] = 0;
+		binary[7] = 1;
+		binary[8] = 0;
+	}
+	else if(reg_num == 3)
+	{
+		binary[6] = 0;
+		binary[7] = 1;
+		binary[8] = 1;
+	}
+	else if(reg_num == 4)
+	{
+		binary[6] = 1;
+		binary[7] = 0;
+		binary[8] = 0;
+	}
+	else if(reg_num == 5)
+	{
+		binary[6] = 1;
+		binary[7] = 0;
+		binary[8] = 1;
+	}
+	else if(reg_num == 6)
+	{
+		binary[6] = 1;
+		binary[7] = 1;
+		binary[8] = 0;
+	}
+	else if(reg_num == 7)
+	{
+		binary[6] = 1;
+		binary[7] = 1;
+		binary[8] = 1;
+	}
+}
+
+/*
+Detects and sets the bits for opcode based on the opcode pulled from
+the lines of code.
+Also, the check for HLT is set to true or false based on what is found here.
+*/
+void detect_opcode()
+{
+	if(strncmp(opcode, "OR", 2) == 0) //OR = 0000 11
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 1;
+		binary[5] = 1;
+	}
+	else if(strncmp(opcode, "NEG", 3) == 0) //NEG = 0000 00
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 0;
+		binary[5] = 0;
+	}
+	else if(strncmp(opcode, "AND", 3) == 0) //AND = 0000 01
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 0;
+		binary[5] = 1;
+	}
+	else if(strncmp(opcode, "XOR", 3) == 0) //XOR = 0000 10
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 1;
+		binary[5] = 0;
+	}
+	else if(strncmp(opcode, "LSR", 3) == 0) //LSR = 0001 00
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 1;
+		binary[4] = 0;
+		binary[5] = 0;
+	}
+	else if(strncmp(opcode, "LSL", 3) == 0) //LSL = 0001 01
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 0;
+		binary[3] = 1;
+		binary[4] = 0;
+		binary[5] = 1;
+	}
+	else if(strncmp(opcode, "HLT", 3) == 0) //HLT = 0010 10
+	{
+		check_hlt = 1;
+	}
+	else if(strncmp(opcode, "MOV", 3) == 0) //MOV = 0011 01
+	{
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 1;
+		binary[3] = 1;
+		binary[4] = 0;
+		binary[5] = 1;
+	}
+	else if(strncmp(opcode, "JMP", 3) == 0) //JMP = 0011 11 //Not currently active.
+	{
+		check_jmp = 1;
+		binary[0] = 0;
+		binary[1] = 0;
+		binary[2] = 1;
+		binary[3] = 1;
+		binary[4] = 1;
+		binary[5] = 1;
+	}
+	else if(strncmp(opcode, "ADD", 3) == 0) //ADD = 0100 00
+	{
+		binary[0] = 0;
+		binary[1] = 1;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 0;
+		binary[5] = 0;
+	}
+	else if(strncmp(opcode, "SUB", 3) == 0) //SUB = 0100 01
+	{
+		binary[0] = 0;
+		binary[1] = 1;
+		binary[2] = 0;
+		binary[3] = 0;
+		binary[4] = 0;
+		binary[5] = 1;
+	}
+}
+
+/*
+Detect the opdest part of code and sets the appropriate bits.
+The check variables for DC and DS are set here.
+*/
+void detect_opdest()
+{
+	int reg_num = 0;
+
+	if(strncmp(opdest, "DC", 2) == 0)
+	{
+		check_dc = 1;
+	}
+	else if(strncmp(opdest, "DS", 2) == 0)
+	{
+		check_ds = 1;
+	}
+	else if(opdest[0] == '*')
+	{
+		binary[9] = 0;
+		binary[10] = 1;
+		reg_num = opdest[2] - '0'; //To convert the character number to int number.
+		set_bin_opdest(reg_num);
+	}
+	else if(opdest[0] =='R')
+	{
+		binary[9] = 0;
+		binary[10] = 0;
+		reg_num = opdest[1] - '0'; //To convert the character number to int number.
+		set_bin_opdest(reg_num);
+	}
+}
+
+
+/*
+Detect and sets the bits for opsource part of code.
+The check variable for address is set here.
+*/
+void detect_opsource()
+{
+	if(opsource[0] == '#')
+	{
+		binary[11] = 0;
+		binary[12] = 0;
+		binary[13] = 0;
+		binary[14] = 1;
+		binary[15] = 0;
+		check_imm = 1;
+	}
+	else if(opsource[0] == '*')
+	{
+		binary[14] = 0;
+		binary[15] = 1;
+		set_bin_opsource(opsource[2] - '0'); //To convert char number to int number.
+
+	}
+	else if(opsource[0] == '&')
+	{
+		binary[11] = 0;
+		binary[12] = 0;
+		binary[13] = 0;
+		binary[14] = 1;
+		binary[15] = 0;
+		check_amp = 1;
+	}
+	else //opdest[0] == 'R'.
+	{
+		binary[14] = 0;
+		binary[15] = 0;
+		set_bin_opsource(opsource[1] - '0'); //To convert character number to int number.
+	}
+}
+
+
+/*
+A function to convert hexadecimal number to decimal.
+*/
+int hex_to_dec(char hex[])
+{
+		int i = 0;
+		int temp = 0;
+		int j = strlen(hex);
+		while(j >= 0)
+		{
+			switch(hex[j-1])
+			{
+				case '0':  break;
+				case '1': temp = temp + 1*pow(16,i);break;
+				case '2': temp = temp + 2*pow(16, i);break;
+				case '3': temp = temp + 3*pow(16, i);break;
+				case '4': temp = temp + 4*pow(16, i);break;
+				case '5': temp = temp + 5*pow(16, i);break;
+				case '6': temp = temp + 6*pow(16, i);break;
+				case '7': temp = temp + 7*pow(16, i);break;
+				case '8': temp = temp + 8*pow(16, i);break;
+				case '9': temp = temp + 9*pow(16, i);break;
+				case 'A': temp = temp + 10*pow(16,i);break;
+				case 'B': temp = temp + 11*pow(16,i);break;
+				case 'C': temp = temp + 12*pow(16,i);break;
+				case 'D': temp = temp + 13*pow(16,i);break;
+				case 'E': temp = temp + 14*pow(16,i);break;
+				case 'F': temp = temp + 15*pow(16,i);break;
+				default: temp = temp+0;
+			}
+			i++;
+			j--;
+		}
+	return temp;
+}
+#if DEV_MODE
+/*
+Experimental function.
+Not sure...
+*/
+void pass1_jmp(FILE *fp)
+{
+	int addr = 0; //Counting variable for counting the address.
+	int dec = 0; //For holding decimal values.
+	int check_line = 0; //To determine if the line being read is the first line of the code.
+
+	char tag[10];
+
+	//FILE *f = fopen(fn, "r"); //Opens the user's code file.
+	FILE *sym = fopen("symbol_table_jmp.txt" , "w"); //Creates or opens the symbol_table.txt file.
+
+	while(!feof(f))
+	{
+		if(fscanf(f, "%s%s%s%s", tag, opcode, opdest, opsource) < 0 )
+		{
+			break;
+		}
+		else
+		{
+			check_line++; //Increment by one.
+			//Resetting the check variables to 0.
+			check_imm = 0;
+			check_dc = 0;
+			check_ds = 0;
+			check_amp = 0;
+			check_hlt = 0;
+			check_jmp = 0;
+			dec = 0;
+
+			//The check variables are changed in these functions according to the situation.
+			detect_opcode();
+			detect_opdest();
+			detect_opsource();
+
+			//If in the first line, then the addr variable is set to -2.
+			if(check_line == 1)
+			{
+				addr = -2;
+			}
+
+			//If immediate value or address of variable is required, then addr is incremented by 4.
+			if(check_imm == 1 || check_amp == 1)
+			{
+				addr += 4;
+			}
+			else if(check_dc && (check_hlt == 0))
+			{
+				addr += 2;
+				fprintf(sym,"%d\t%s\t%s\t%s\n ", addr, opcode, opdest, opsource);
+			}
+			else if(check_ds && check_hlt == 0)
+			{
+				dec = hex_to_dec(opsource);
+				addr += 2;
+				fprintf(sym,"%d\t%s\t%s\t%s\n ", addr, opcode, opdest, opsource);
+				addr += ((dec*2) - 2);
+			}
+			else
+			{
+				addr += 2;
+			}
+		}
+	}
+
+	fclose(sym);
+	fclose(f);
+}
+#endif
+
+/*
+The symbol table is built here.
+Used to determine the variable names, respective addresses and values.
+*/
+void pass1(char fn[])
+{
+	int addr = 0; //Counting variable for counting the address.
+	int dec = 0; //For holding decimal values.
+	int check_line = 0; //To determine if the line being read is the first line of the code.
+
+	FILE *f = fopen(fn, "r"); //Opens the user's code file.
+	FILE *sym = fopen("symbol_table.txt" , "w"); //Creates or opens the symbol_table.txt file.
+
+	while(!feof(f))
+	{
+		if(fscanf(f, "%s%s%s", opcode, opdest, opsource) < 0 )
+		{
+			break;
+		}
+		else
+		{
+			check_line++; //Increment by one.
+			//Resetting the check variables to 0.
+			check_imm = 0;
+			check_dc = 0;
+			check_ds = 0;
+			check_amp = 0;
+			check_hlt = 0;
+			check_jmp = 0;
+			dec = 0;
+
+			//The check variables are changed in these functions according to the situation.
+			detect_opcode();
+			detect_opdest();
+			detect_opsource();
+
+			//If in the first line, then the addr variable is set to -2.
+			if(check_line == 1)
+			{
+				addr = -2;
+			}
+
+			//If immediate value or address of variable is required, then addr is incremented by 4.
+			if(check_imm == 1 || check_amp == 1)
+			{
+				addr += 4;
+			}
+			else if(check_dc && (check_hlt == 0))
+			{
+				addr += 2;
+				fprintf(sym,"%d\t%s\t%s\t%s\n ", addr, opcode, opdest, opsource);
+			}
+			else if(check_ds && check_hlt == 0)
+			{
+				dec = hex_to_dec(opsource);
+				addr += 2;
+				fprintf(sym,"%d\t%s\t%s\t%s\n ", addr, opcode, opdest, opsource);
+				addr += ((dec*2) - 2);
+			}
+			else
+			{
+				addr += 2;
+			}
+		}
+	}
+
+	fclose(sym);
+	fclose(f);
+}
+
+
+/*
+This function convert the passed binary number to decimal and prints
+using %0.4X format specifier to print in hexadecimal.
+*/
+void bin_to_hex(int bin[])
+{
+	int i;
+	int dec=0; //Holds decimal value of binary number.
+	int j=0;
+
+	//Following for loop converts to decimal and stores in dec.
+	for(i = 15; i >= 0;i--)
+	{
+		dec = dec + bin[i]*pow(2,j);
+		j++;
+	}
+
+	printf("%0.4X\n",dec); //Prints in hexadecimal.
+}
+
+
+/*
+This function reads the symbol table line by line and compares the variable
+name in that line with the required variable name.
+If the names match, then the address of the variable according to the symbol
+table file is printed.
+*/
+void addr_finder(char var_ops[])
+{
+	char var_file[10]; //The variable name from the symbol_table.
+	char type[10]; //DC or DS
+	char val[10]; //Value of the variable.
+	char addr[10]; //The address of the variable.
+	char var_name[10]; //The required varibale name being searched for.
+	int i = 0;
+	int j = 1;
+
+    //The variable name of of the form &var_name.
+    //This converts it to the form var_name.
+	for(i = 0; j <= strlen(var_ops); i++)
+	{
+		var_name[i] = var_ops[j];
+		j++;
+	}
+
+	FILE *fp = fopen("symbol_table.txt", "r"); //Opening the symbol_table.txt file for reading.
+
+	while(!feof(fp))
+	{
+		if (fscanf(fp, "%s%s%s%s", addr, var_file, type, val) < 0 )
+		{
+			break;
+		}
+		else
+		{
+			if(strcmp(var_file,var_name) == 0) //Checking the required variable name vs. the current variable name.
+			{
+				i = hex_to_dec(addr);
+				printf("%0.4X\n",i);
+			}
+		}
+	}
+
+	//We learnt to close opened resources the hard way.
+	fclose(fp);
 }

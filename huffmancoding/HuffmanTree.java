@@ -73,7 +73,7 @@ public class HuffmanTree {
 	}
 
 	/*new*///Can we take this out? Put it another class? BETTER! PUT IN HuffmanCoding.class! But I'm too lazy.
-	public String decode(String inputCoded, String[] codes, String[] inputUnique) {
+	public static String decode(String inputCoded, String[] codes, String[] inputUnique) {
 		String message = "";
 		String temp = null;
 		int count = 1;
