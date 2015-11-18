@@ -1,0 +1,26 @@
+59c59,60
+< 		//Modify this
+---
+> 		//Getting the input from the file
+> 		//and appropriately formatting the input for decoding
+64c65
+< 		//HuffmanTree tree = new HuffmanTree(); //Create empty huffman tree.
+---
+> 		HuffmanTree tree = new HuffmanTree();
+70,71c71
+< 		String decodedMessage = HuffmanTree.decode(codedMessage, codes, uniqueCharacters);
+< 
+---
+> 		String decodedMessage = tree.decode(codedMessage, codes, uniqueCharacters);
+90d89
+< 	/*To read a 'line' (terminated by '\0')*/
+103,104d101
+< 
+< 	/*Miscallaneous Functions*/
+127d123
+< 	/*To split the input string from the compresses file into a String[]*/
+135c131
+< }
+\ No newline at end of file
+---
+> }
