@@ -26,6 +26,7 @@ public class Client {
 		try {
 			File output = HuffmanCoding.compress(new File("file.txt"));
 			//output.createNewFile();
+			//File output = new File("file.txt.ar");
 			File decode = HuffmanCoding.decompress(output, "new.txt");
 		}
 		catch(Exception e) {

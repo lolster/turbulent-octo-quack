@@ -83,11 +83,12 @@ public class HuffmanTree {
 			index = indexOf(codes, temp);
 			if(index != -1) {
 				inputCoded = inputCoded.substring(count);
-				if(inputUnique[index] == "\0") { //Why? Not needed, NUL characters are stripped in input.
-					break;
-				}
+				//if(inputUnique[index] == "\0") { //Why? Not needed, NUL characters are stripped in input.
+				//	break;
+				//}
 				message += inputUnique[index];
 				//System.out.println(message);
+				//System.out.println(inputCoded);
 				count = 1;
 				index = 0;
 			}
